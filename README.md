@@ -7,6 +7,9 @@ hardening**. The application layer is a deliberately thin, swappable stub —
 the deliverable is the platform (see
 [docs/architecture.md](docs/architecture.md)).
 
+> **Getting started?** [GUIDE.md](GUIDE.md) is the ordered checklist of every
+> human step from local repo → provisioned platform → graded demo.
+
 ```text
 apps/        frontend (React+Vite+TS → unprivileged nginx)  ·  backend (Spring Boot 3 / Java 21)
 infra/       bootstrap (Phase 0, run-once)  ·  terraform (AKS, ACR, KV, SQL, VNet, Log Analytics)
