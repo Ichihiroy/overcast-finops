@@ -113,7 +113,7 @@ jobs:
             --set serviceAccount.azureClientId="${{ vars.APP_IDENTITY_CLIENT_ID }}" \
             --set secretProviderClass.keyVaultName="${{ vars.KEY_VAULT_NAME }}" \
             --set secretProviderClass.tenantId="${{ vars.AZURE_TENANT_ID }}" \
-            --wait --timeout 5m
+            --atomic --timeout 5m
 
   # ── Stage 4: production deploy (gated by required reviewer) ──
   deploy-production:
@@ -142,4 +142,4 @@ jobs:
             --set serviceAccount.azureClientId="${{ vars.APP_IDENTITY_CLIENT_ID }}" \
             --set secretProviderClass.keyVaultName="${{ vars.KEY_VAULT_NAME }}" \
             --set secretProviderClass.tenantId="${{ vars.AZURE_TENANT_ID }}" \
-            --wait --timeout 5m
+            --atomic --timeout 5m

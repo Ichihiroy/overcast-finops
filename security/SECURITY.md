@@ -32,12 +32,22 @@ Every control below is enforced by a file in this repo, not by convention.
   only; frontend egress → backend + DNS only; backend egress → SQL + DNS only
   (`networkpolicies.yaml`, chart NetworkPolicies).
 - Enforced by Azure CNI network policy (`network_policy = "azure"` in `aks.tf`).
+- **TLS**: HTTPS terminates at the NGINX ingress (cert-manager / Let's
+  Encrypt); nothing is reachable except through it. In-cluster hops are plain
+  HTTP inside the default-deny network — if in-cluster encryption becomes a
+  requirement, the upgrade path is a service mesh (mTLS) and is out of scope
+  here by design.
 
 ## Supply chain
 
-- **Trivy gates every image** on HIGH/CRITICAL before it can be pushed.
+- **Trivy gates every image** on HIGH/CRITICAL before it can be pushed, and a
+  Trivy **misconfiguration scan gates every Terraform PR** (`infra-plan.yml`).
 - Deploys pin **immutable `sha-<gitsha>` tags**; the `:main` alias is never
   deployed (`docs/adr/0005`).
+- Image **signing** is not yet enabled; the documented next step is cosign
+  keyless signing in CI (OIDC fits it naturally) + an admission policy
+  verifying signatures at deploy time. Immutable digest-pinned tags plus the
+  scan gate cover provenance until then.
 
 ## Runtime
 

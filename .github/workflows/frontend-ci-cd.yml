@@ -117,7 +117,7 @@ jobs:
             --set image.repository="${{ vars.ACR_LOGIN_SERVER }}/frontend" \
             --set image.tag="sha-${GITHUB_SHA::7}" \
             --set ingress.host="${{ vars.FRONTEND_HOST_STAGING }}" \
-            --wait --timeout 5m
+            --atomic --timeout 5m
 
   # ── Stage 4: production deploy (gated by required reviewer) ──
   deploy-production:
@@ -144,4 +144,4 @@ jobs:
             --set image.repository="${{ vars.ACR_LOGIN_SERVER }}/frontend" \
             --set image.tag="sha-${GITHUB_SHA::7}" \
             --set ingress.host="${{ vars.FRONTEND_HOST_PRODUCTION }}" \
-            --wait --timeout 5m
+            --atomic --timeout 5m

@@ -24,9 +24,34 @@ Normal path — **never deploy by hand**:
 Infra path: PR touching `infra/**` → review the plan comment → merge → approve
 the gated apply.
 
+## Infra drift detection
+
+The only supported write path to Azure is `infra-apply` on main — nobody has
+standing Contributor access, so drift should be rare and is always suspicious.
+To detect it:
+
+1. Open a PR touching `infra/**` (a comment-only change is enough) — the plan
+   posted on the PR IS the drift report: any resource listed as changing that
+   no commit touched was modified out of band.
+2. Investigate via the Azure Activity Log on the resource group (who/what/when)
+   before deciding direction:
+   - Codify: replicate the change in Terraform and merge, or
+   - Revert: merge an empty-change PR and let the gated apply reconcile
+     reality back to code.
+
+To automate this, add a `schedule:` trigger to `infra-plan.yml` that fails on a
+non-empty plan (`terraform plan -detailed-exitcode`). Note this needs one extra
+federated credential on platform-ro for the scheduled context
+(`repo:<org>/<repo>:ref:refs/heads/main`), since its current trust only matches
+`pull_request` — a deliberate least-privilege default.
+
 ## Rollback
 
-Helm keeps release history per namespace:
+**Automatic**: every CI deploy runs `helm upgrade --atomic` — if pods fail
+their probes within the timeout, Helm rolls the release back to the previous
+revision on its own and the job fails loudly. A bad image never lingers.
+
+**Manual** — Helm keeps release history per namespace:
 
 ```bash
 helm -n app-production history backend

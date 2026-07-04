@@ -23,7 +23,7 @@ names (storage account, and later ACR/Key Vault/SQL from Terraform) collide.
 
 | Resource                                | Purpose                                        |
 | --------------------------------------- | ---------------------------------------------- |
-| `rg-<team>-<project>-tfstate` + storage | Remote Terraform state (blob container)        |
+| `rg-<team>-<project>-tfstate` + storage | Remote Terraform state (blob container, with state locking — see below) |
 | `rg-<team>-<project>-<env>`             | App RG — the RBAC scope for all CI roles       |
 | `<prefix>-gh-platform-ro`         | OIDC identity: `terraform plan` on PRs (Reader)|
 | `<prefix>-gh-platform-rw`         | OIDC identity: `terraform apply` on main (Contributor + RBAC Administrator, gated by the `production` environment) |
@@ -34,6 +34,18 @@ the workflows run: `pull_request` for RO, `environment:production` for RW,
 `ref:refs/heads/main` + `environment:staging|production` for app CI. No client
 secrets exist anywhere — GitHub presents a short-lived OIDC token and Azure
 exchanges it.
+
+### Remote state & locking
+
+Terraform state lives in the blob container (`azurerm` backend, config injected
+at `terraform init` via `-backend-config` — see the workflows). The backend
+**locks state automatically using Azure blob leases**: any `plan`/`apply`
+acquires a lease on the state blob, so two concurrent runs (or a runner racing
+a laptop) cannot corrupt state — the second run fails fast with a lock error.
+This is why both CI identities get *Storage Blob Data Contributor* on the
+storage account: even a read-only plan must acquire the lease. The
+`infra-apply` workflow additionally serializes itself with a non-cancelable
+GitHub concurrency group.
 
 Why RBAC Administrator on top of Contributor: Terraform itself creates role
 assignments (AcrPull for the kubelet, Key Vault roles for the workload

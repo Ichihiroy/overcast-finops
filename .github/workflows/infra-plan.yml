@@ -49,6 +49,15 @@ jobs:
       - name: Terraform validate
         run: terraform -chdir=${{ env.TF_DIR }} validate
 
+      - name: IaC policy scan (Trivy misconfiguration checks)
+        uses: aquasecurity/trivy-action@0.29.0
+        with:
+          scan-type: config
+          scan-ref: ${{ env.TF_DIR }}
+          format: table
+          exit-code: "1"
+          severity: HIGH,CRITICAL
+
       - name: Terraform plan
         id: plan
         run: |
