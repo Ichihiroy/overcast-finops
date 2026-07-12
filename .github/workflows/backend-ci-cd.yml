@@ -37,7 +37,10 @@ jobs:
           cache: maven
       - name: Maven verify
         working-directory: ${{ env.CONTEXT }}
-        run: ./mvnw -B verify
+        # -U forces re-resolution so a partially-cached dependency (e.g. a
+        # download cancelled by cancel-in-progress, leaving a .lastUpdated
+        # marker) is re-fetched instead of reported as a missing package.
+        run: ./mvnw -B -U verify
 
   # ── Stage 2: image build → Trivy gate → (main only) push to ACR + cosign sign ──
   image:
