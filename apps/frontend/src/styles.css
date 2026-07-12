@@ -16,7 +16,7 @@
   --text-dim: #8a93a4;
   --text-faint: #5c6472;
 
-  --accent: #5b7cfa; /* steel indigo */
+  --accent: #5b7cfa; /* steel indigoo */
   --accent-2: #6d8bff;
   --accent-ink: #ffffff;
 
@@ -31,7 +31,9 @@
   --radius: 6px;
   --radius-sm: 4px;
   --shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
-  --mono: ui-monospace, "JetBrains Mono", "SF Mono", "Roboto Mono", Menlo, Consolas, monospace;
+  --mono:
+    ui-monospace, "JetBrains Mono", "SF Mono", "Roboto Mono", Menlo, Consolas,
+    monospace;
   --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   font-synthesis: none;
 }
@@ -54,8 +56,16 @@ body {
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
-    radial-gradient(1100px 520px at 88% -8%, rgba(91, 124, 250, 0.06), transparent 60%),
-    radial-gradient(900px 480px at -5% 0%, rgba(56, 189, 248, 0.05), transparent 55%);
+    radial-gradient(
+      1100px 520px at 88% -8%,
+      rgba(91, 124, 250, 0.06),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 480px at -5% 0%,
+      rgba(56, 189, 248, 0.05),
+      transparent 55%
+    );
   background-size:
     32px 32px,
     32px 32px,
@@ -460,7 +470,9 @@ select:focus,
   font-size: 0.8rem;
   font-family: var(--sans);
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 .ghost-btn:hover:not(:disabled) {
   border-color: var(--accent);
@@ -514,7 +526,9 @@ select:focus,
   text-align: left;
   color: inherit;
   font: inherit;
-  transition: background 0.12s ease, border-color 0.12s ease;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
   animation: rise 0.3s ease both;
 }
 .ft-row:last-child {
@@ -965,7 +979,9 @@ select:focus,
   text-decoration: none;
   font-size: 0.86rem;
   border-bottom: 1px solid transparent;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 .lp-link:hover {
   color: var(--text);
@@ -1067,7 +1083,9 @@ select:focus,
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1.3rem 1.25rem;
-  transition: border-color 0.15s ease, transform 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease;
 }
 .feature:hover {
   border-color: var(--border-strong);

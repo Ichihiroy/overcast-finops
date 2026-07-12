@@ -1,4 +1,4 @@
-# Overcast backend — cloud-bill waste scanner
+# Overcast backend — cloud-bill waste scanner.
 
 Spring Boot 3.3 / Java 21. Ingests an Azure Cost Management CSV, runs a
 deterministic rules engine, and serves color-coded findings with a per-item
@@ -64,16 +64,16 @@ endpoint); the Overcast surface is `/api/scans` and `/api/findings`.
 
 ## Rules
 
-| id | category | fires when | saving |
-| -- | -------- | ---------- | ------ |
-| `unattached_disk` | forgotten | managed disk, association column present but empty | 100% of cost |
-| `orphaned_public_ip` | forgotten | public IP, unassociated | 100% |
-| `old_snapshot` | forgotten | snapshot `age_days > 90` | 100% |
-| `prev_gen_vm` | oversized | VM SKU in the previous-gen list | 20% |
-| `nonprod_247` | idle | VM in dev/test/sandbox/qa RG, ran ~full month | 65% |
-| `ondemand_vs_reserved` | oversized | prod VM, sustained full-month usage | 30% |
-| `premium_storage_nonprod` | oversized | attached premium disk in a non-prod RG | 40% |
-| `untagged` | forgotten | missing `owner`/`env` tag | 0 (flag only) |
+| id                        | category  | fires when                                         | saving        |
+| ------------------------- | --------- | -------------------------------------------------- | ------------- |
+| `unattached_disk`         | forgotten | managed disk, association column present but empty | 100% of cost  |
+| `orphaned_public_ip`      | forgotten | public IP, unassociated                            | 100%          |
+| `old_snapshot`            | forgotten | snapshot `age_days > 90`                           | 100%          |
+| `prev_gen_vm`             | oversized | VM SKU in the previous-gen list                    | 20%           |
+| `nonprod_247`             | idle      | VM in dev/test/sandbox/qa RG, ran ~full month      | 65%           |
+| `ondemand_vs_reserved`    | oversized | prod VM, sustained full-month usage                | 30%           |
+| `premium_storage_nonprod` | oversized | attached premium disk in a non-prod RG             | 40%           |
+| `untagged`                | forgotten | missing `owner`/`env` tag                          | 0 (flag only) |
 
 Constants (`prev_gen_delta`, `offhours_factor`, `ri_discount`, `premium_delta`,
 thresholds, SKU lists) all live in `rules-config.yaml`. CSV column mapping is
