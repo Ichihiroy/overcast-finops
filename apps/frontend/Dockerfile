@@ -11,7 +11,7 @@ COPY src ./src
 RUN npm run build
 
 # ── Runtime stage: unprivileged nginx on 8080 ────────────────────────
-FROM nginxinc/nginx-unprivileged:1.27-alpine
+FROM nginxinc/nginx-unprivileged:1.31-alpine
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY docker-entrypoint.d/10-runtime-env.sh /docker-entrypoint.d/10-runtime-env.sh

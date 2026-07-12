@@ -67,6 +67,7 @@ jobs:
           exit-code: "1"
           severity: HIGH,CRITICAL
           ignore-unfixed: true
+          trivyignores: apps/backend/.trivyignore
 
       - name: Azure login (OIDC, app-ci identity)
         if: github.event_name == 'push'

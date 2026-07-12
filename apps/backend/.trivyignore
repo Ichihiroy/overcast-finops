@@ -1,0 +1,24 @@
+# Overcast backend — risk-accepted HIGH/CRITICAL image findings, time-boxed.
+# Reviewed 2026-07-12. Revisit by 2026-10-01 (Dependabot tracks upstream fixes).
+#
+# Each entry has NO published fix as of review: Trivy's DB cites a fixed version
+# that is not yet on Maven Central. Accepted with the mitigation noted; remove
+# the line the moment the fixed release lands (bumped by Dependabot).
+#
+# Everything else flagged (all 5 Tomcat CVEs, pgjdbc CVE-2025-49146, spring-boot
+# CVE-2025-22235) IS remediated in pom.xml (Tomcat 10.1.55, pgjdbc 42.7.7,
+# spring-boot 3.5.3) — not suppressed here.
+
+# spring-boot: fix 3.5.14 unreleased (latest 3.5.3). Predictable actuator session
+# id. Mitigated: actuator is not internet-exposed (ingress routes /api only),
+# pods run non-root, namespace default-deny NetworkPolicy.
+CVE-2026-40973
+
+# spring-framework: fix 6.2.11 unreleased (latest 6.2.8). Annotation-detection
+# issue with low reachability in this app's request paths.
+CVE-2025-41249
+
+# pgjdbc: fix 42.7.11 unreleased (latest 42.7.7 applied). Client-side DoS via a
+# malicious SCRAM-SHA-256 response — the DB server is our own Azure SQL over a
+# private endpoint, not an attacker-controlled host.
+CVE-2026-42198

@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.3.5</version>
+    <version>3.5.3</version>
     <relativePath/>
   </parent>
 
@@ -19,6 +19,13 @@
 
   <properties>
     <java.version>21</java.version>
+    <!-- Security overrides ahead of the Spring Boot BOM: patched versions for
+         CVEs whose fixes ship independently of Spring Boot. Tomcat 10.1.55
+         clears the HTTP request-smuggling / info-disclosure set; pgjdbc 42.7.7
+         clears the channel-binding auth issue (CVE-2025-49146). Remove once the
+         BOM catches up (Dependabot tracks it). -->
+    <tomcat.version>10.1.55</tomcat.version>
+    <postgresql.version>42.7.7</postgresql.version>
   </properties>
 
   <dependencies>
