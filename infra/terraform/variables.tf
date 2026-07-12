@@ -65,9 +65,9 @@ variable "kubernetes_version" {
 }
 
 variable "system_node_vm_size" {
-  description = "VM size for the system node pool."
+  description = "VM size for the system node pool. DSv3 family (not DSv5): the target subscription has 0 DSv5 vCPU quota in westeurope; DSv3 is equivalent (2 vCPU, premium-storage capable)."
   type        = string
-  default     = "Standard_D2s_v5"
+  default     = "Standard_D2s_v3"
 }
 
 variable "system_node_min_count" {
@@ -81,9 +81,9 @@ variable "system_node_max_count" {
 }
 
 variable "user_node_vm_size" {
-  description = "VM size for the user (workload) node pool."
+  description = "VM size for the user (workload) node pool. DSv3 family (not DSv5): the target subscription has 0 DSv5 vCPU quota in westeurope; DSv3 is equivalent (4 vCPU, premium-storage capable)."
   type        = string
-  default     = "Standard_D4s_v5"
+  default     = "Standard_D4s_v3"
 }
 
 variable "user_node_min_count" {
