@@ -14,7 +14,10 @@ RUN npm run build
 FROM nginxinc/nginx-unprivileged:1.31-alpine
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY docker-entrypoint.d/10-runtime-env.sh /docker-entrypoint.d/10-runtime-env.sh
+# --chmod: the nginx entrypoint only RUNS executable scripts in
+# /docker-entrypoint.d/ — a non-executable copy is silently skipped and the
+# committed local-dev env.js (localhost API) would ship to production.
+COPY --chmod=755 docker-entrypoint.d/10-runtime-env.sh /docker-entrypoint.d/10-runtime-env.sh
 # --chown so the entrypoint (running as nginx, uid 101) can rewrite env.js at start
 COPY --from=build --chown=nginx:nginx /workspace/dist /usr/share/nginx/html
 
