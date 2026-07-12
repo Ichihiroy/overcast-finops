@@ -67,8 +67,9 @@ public class ScanService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
 
+        String dataNotes = dataNotes(parsed.hasAssociationColumn(), parsed.hasAgeColumn());
         Scan scan = new Scan(scanId, "azure", filename, Instant.now(), parsed.currency(),
-                totalCost, result.totalMonthlyWaste());
+                totalCost, result.totalMonthlyWaste(), dataNotes);
         List<Finding> rows = new ArrayList<>();
         for (RuleMatch m : result.matches()) {
             rows.add(new Finding(
@@ -180,9 +181,31 @@ public class ScanService {
     }
 
     private ScanSummary buildSummary(Scan scan, List<Finding> rows) {
+        List<String> warnings = scan.dataNotes() == null || scan.dataNotes().isBlank()
+                ? List.of()
+                : List.of(scan.dataNotes().split("\n"));
         return new ScanSummary(scan.id(), scan.filename(), scan.currency(),
                 scan.totalMonthlyCost(), scan.totalMonthlyWaste(),
-                annual(scan.totalMonthlyWaste()), rows.size(), categoryTotals(rows));
+                annual(scan.totalMonthlyWaste()), rows.size(), categoryTotals(rows), warnings);
+    }
+
+    /**
+     * Data-quality notes for the uploaded file. A raw Azure Cost Management
+     * export lacks the enrichment columns Overcast's high-value rules depend on
+     * (attachment state, resource age) — those rules stay silent rather than
+     * guess, so without this notice a raw upload looks deceptively clean and
+     * every finding collapses to the tag-governance flag. Null = fully enriched.
+     */
+    private static String dataNotes(boolean hasAssociationColumn, boolean hasAgeColumn) {
+        List<String> notes = new ArrayList<>();
+        if (!hasAssociationColumn) {
+            notes.add("No attachment data (AssociatedResource column) — skipped: "
+                    + "Unattached managed disk, Orphaned public IP, Premium storage in non-prod.");
+        }
+        if (!hasAgeColumn) {
+            notes.add("No resource-age data (AgeDays column) — skipped: Stale snapshot.");
+        }
+        return notes.isEmpty() ? null : String.join("\n", notes);
     }
 
     private Map<String, CategoryTotal> categoryTotals(List<Finding> rows) {

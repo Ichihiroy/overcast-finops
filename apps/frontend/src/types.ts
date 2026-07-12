@@ -15,6 +15,7 @@ export interface ScanSummary {
   totalAnnualWaste: number;
   findingCount: number;
   byCategory: Record<Category, CategoryTotal>;
+  warnings: string[];
 }
 
 export interface Finding {

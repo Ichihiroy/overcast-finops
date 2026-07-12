@@ -244,6 +244,23 @@ export default function App() {
           </div>
         )}
 
+        {summary && summary.warnings.length > 0 && (
+          <div className="warn-banner">
+            <AlertIcon size={16} />
+            <div className="warn-body">
+              <strong>Raw export detected</strong> — some rules need an enriched
+              export (attachment + age data) and were skipped, so this scan
+              under-reports waste. Re-export with the Overcast enricher to catch
+              everything.
+              <ul>
+                {summary.warnings.map((w) => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
         {summary && (
           <>
             <WasteCounter

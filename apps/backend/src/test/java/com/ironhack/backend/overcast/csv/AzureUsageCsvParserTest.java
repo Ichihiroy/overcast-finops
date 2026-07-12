@@ -51,6 +51,27 @@ class AzureUsageCsvParserTest {
     }
 
     @Test
+    void flagsWhetherEnrichmentColumnsArePresent() {
+        String enriched = """
+                ResourceId,ResourceType,ResourceGroup,MeterName,SKU,Quantity,UnitPrice,Cost,Currency,Tags,AssociatedResource,AgeDays
+                /rg/disk1,Microsoft.Compute/disks,rg-prod,Disk,P10,730,0.03,21.68,USD,"{}",,
+                """;
+        var enrichedResult = parser.parse(new StringReader(enriched));
+        assertThat(enrichedResult.hasAssociationColumn()).isTrue();
+        assertThat(enrichedResult.hasAgeColumn()).isTrue();
+
+        // A raw Azure Cost Management export carries neither enrichment column —
+        // this is what drives the "raw export" data-quality warning.
+        String raw = """
+                ResourceId,ResourceType,ResourceGroup,MeterName,SKU,Quantity,UnitPrice,Cost,Currency,Tags
+                /rg/disk1,Microsoft.Compute/disks,rg-prod,Disk,P10,730,0.03,21.68,USD,"{}"
+                """;
+        var rawResult = parser.parse(new StringReader(raw));
+        assertThat(rawResult.hasAssociationColumn()).isFalse();
+        assertThat(rawResult.hasAgeColumn()).isFalse();
+    }
+
+    @Test
     void handlesAliasedHeadersAndQuotedTagsWithCommas() {
         String csv = """
                 InstanceId,ConsumedService,ResourceGroupName,MeterName,MeterSubCategory,UsageQuantity,EffectivePrice,CostInBillingCurrency,BillingCurrency,Tags

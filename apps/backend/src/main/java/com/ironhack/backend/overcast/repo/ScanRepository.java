@@ -19,8 +19,8 @@ public class ScanRepository {
     public void insert(Scan scan) {
         jdbc.sql("""
                 INSERT INTO scan (id, source_cloud, filename, uploaded_at, currency,
-                                  total_monthly_cost, total_monthly_waste)
-                VALUES (:id, :cloud, :filename, :uploadedAt, :currency, :cost, :waste)
+                                  total_monthly_cost, total_monthly_waste, data_notes)
+                VALUES (:id, :cloud, :filename, :uploadedAt, :currency, :cost, :waste, :dataNotes)
                 """)
                 .param("id", scan.id())
                 .param("cloud", scan.sourceCloud())
@@ -29,6 +29,7 @@ public class ScanRepository {
                 .param("currency", scan.currency())
                 .param("cost", scan.totalMonthlyCost())
                 .param("waste", scan.totalMonthlyWaste())
+                .param("dataNotes", scan.dataNotes())
                 .update();
     }
 
@@ -42,7 +43,8 @@ public class ScanRepository {
                         rs.getTimestamp("uploaded_at").toInstant(),
                         rs.getString("currency"),
                         rs.getBigDecimal("total_monthly_cost"),
-                        rs.getBigDecimal("total_monthly_waste")))
+                        rs.getBigDecimal("total_monthly_waste"),
+                        rs.getString("data_notes")))
                 .optional();
     }
 

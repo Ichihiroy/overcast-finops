@@ -22,7 +22,10 @@ public final class Dtos {
             BigDecimal totalMonthlyWaste,
             BigDecimal totalAnnualWaste,
             long findingCount,
-            Map<String, CategoryTotal> byCategory) {}
+            Map<String, CategoryTotal> byCategory,
+            // Data-quality notices (e.g. raw export missing enrichment columns so
+            // some rules could not run); empty when the export was fully enriched.
+            List<String> warnings) {}
 
     public record FindingDto(
             String id,

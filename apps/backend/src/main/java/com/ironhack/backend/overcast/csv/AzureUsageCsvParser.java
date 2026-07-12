@@ -48,7 +48,8 @@ public final class AzureUsageCsvParser {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public record ParseResult(List<NormalizedResource> resources, String currency) {}
+    public record ParseResult(List<NormalizedResource> resources, String currency,
+                              boolean hasAssociationColumn, boolean hasAgeColumn) {}
 
     public ParseResult parse(Reader input) {
         List<List<String>> rows;
@@ -69,6 +70,7 @@ public final class AzureUsageCsvParser {
             }
         }
         boolean hasAssociationColumn = idx.containsKey("associatedResource");
+        boolean hasAgeColumn = idx.containsKey("ageDays");
 
         // Group rows by resource id: costs sum; descriptive fields come from
         // the row with the highest cost ("primary meter") — see docs/csv-schema.md.
@@ -90,7 +92,7 @@ public final class AzureUsageCsvParser {
         for (var entry : byResource.entrySet()) {
             resources.add(normalize(entry.getKey(), entry.getValue(), hasAssociationColumn));
         }
-        return new ParseResult(resources, currency);
+        return new ParseResult(resources, currency, hasAssociationColumn, hasAgeColumn);
     }
 
     private NormalizedResource normalize(String resourceId, List<Map<String, String>> rows,
