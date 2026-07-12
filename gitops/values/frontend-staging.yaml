@@ -2,4 +2,4 @@
 # CI's promote-staging job is the ONLY writer of image.tag. The ingress host is
 # injected by Terraform (infra/terraform/gitops.tf) from FRONTEND_HOST_STAGING.
 image:
-  tag: "sha-b18d068" # sha-<gitsha>, written by CI on every main build; empty until the first pipeline run
+  tag: "sha-2eb16d7" # sha-<gitsha>, written by CI on every main build; empty until the first pipeline run
