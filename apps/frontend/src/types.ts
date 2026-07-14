@@ -14,9 +14,13 @@ export interface ScanSummary {
   totalMonthlyWaste: number;
   totalAnnualWaste: number;
   findingCount: number;
-  /** Findings with actual money attached — excludes $0 governance flags. */
-  wastefulCount: number;
-  byCategory: Record<Category, CategoryTotal>;
+  /**
+   * Findings with actual money attached — excludes $0 governance flags.
+   * Optional: absent when a not-yet-redeployed backend serves the response
+   * (backend and frontend roll out independently).
+   */
+  wastefulCount?: number;
+  byCategory: Partial<Record<Category, CategoryTotal>>;
   warnings: string[];
 }
 

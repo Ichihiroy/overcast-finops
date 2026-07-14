@@ -267,7 +267,7 @@ export default function App() {
               monthly={summary.totalMonthlyWaste}
               annual={summary.totalAnnualWaste}
               currency={summary.currency}
-              wastefulCount={summary.wastefulCount}
+              wastefulCount={summary.wastefulCount ?? summary.findingCount}
               governanceCount={summary.byCategory.governance?.count ?? 0}
               totalCost={summary.totalMonthlyCost}
             />
@@ -280,12 +280,12 @@ export default function App() {
                   </div>
                   <div className="stat-value">
                     {moneyCents(
-                      summary.byCategory[c].monthlySaving,
+                      summary.byCategory[c]?.monthlySaving ?? 0,
                       summary.currency,
                     )}
                   </div>
                   <div className="stat-foot">
-                    {summary.byCategory[c].count} resources · /mo
+                    {summary.byCategory[c]?.count ?? 0} resources · /mo
                   </div>
                 </div>
               ))}
