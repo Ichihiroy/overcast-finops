@@ -11,20 +11,32 @@
 # Terraform only installs the operators/controllers those manifests need.
 # ============================================================================
 
-# Static ingress IP, created in the AKS *node* resource group on purpose:
-# the cluster identity already has network rights there, so no extra RBAC is
-# needed for the load balancer to bind it (the documented AKS pattern). The
-# domain_name_label gives a free, stable FQDN
-# (<label>.<region>.cloudapp.azure.com) — enough for DNS + TLS without buying
-# a domain, and re-claimed identically on every morning rebuild.
+# Static ingress IP. It lives in the APP resource group — not the AKS node
+# RG — because the CI apply identity (platform-rw) is Contributor on the app
+# RG only (ADR-0006 least privilege) and gets 403 creating resources in
+# MC_*. The trade-off: the cluster's cloud controller must be allowed to
+# bind an IP outside its node RG, granted just below. The domain_name_label
+# gives a free, stable FQDN (<label>.<region>.cloudapp.azure.com) — enough
+# for DNS + TLS without buying a domain, and re-claimed identically on every
+# morning rebuild.
 resource "azurerm_public_ip" "ingress" {
   name                = "pip-${local.name_prefix}-ingress"
-  resource_group_name = azurerm_kubernetes_cluster.main.node_resource_group
+  resource_group_name = data.azurerm_resource_group.main.name
   location            = var.location
   allocation_method   = "Static"
   sku                 = "Standard"
   domain_name_label   = local.name_prefix
   tags                = var.tags
+}
+
+# The documented AKS pattern for a static IP outside the node RG: the cluster
+# identity needs Network Contributor on the IP's resource group so the Azure
+# cloud controller can attach it to the load balancer. platform-rw can grant
+# this because bootstrap gave it RBAC Administrator on the app RG.
+resource "azurerm_role_assignment" "aks_ingress_ip" {
+  scope                = data.azurerm_resource_group.main.id
+  role_definition_name = "Network Contributor"
+  principal_id         = azurerm_kubernetes_cluster.main.identity[0].principal_id
 }
 
 resource "helm_release" "ingress_nginx" {
@@ -41,13 +53,16 @@ resource "helm_release" "ingress_nginx" {
       service = {
         loadBalancerIP = azurerm_public_ip.ingress.ip_address
         annotations = {
-          "service.beta.kubernetes.io/azure-load-balancer-resource-group" = azurerm_kubernetes_cluster.main.node_resource_group
+          "service.beta.kubernetes.io/azure-load-balancer-resource-group" = data.azurerm_resource_group.main.name
         }
       }
     }
   })]
 
-  depends_on = [azurerm_kubernetes_cluster_node_pool.user]
+  depends_on = [
+    azurerm_kubernetes_cluster_node_pool.user,
+    azurerm_role_assignment.aks_ingress_ip, # LB can't bind the IP before this
+  ]
 }
 
 resource "helm_release" "cert_manager" {

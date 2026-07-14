@@ -43,10 +43,9 @@ resource "azurerm_role_assignment" "app_kv_secrets_user" {
 resource "azurerm_federated_identity_credential" "app" {
   for_each = toset([var.app_namespace, var.app_staging_namespace])
 
-  name                = "fic-${each.value}-${var.app_service_account}"
-  resource_group_name = data.azurerm_resource_group.main.name
-  parent_id           = azurerm_user_assigned_identity.app.id
-  issuer              = azurerm_kubernetes_cluster.main.oidc_issuer_url
-  subject             = "system:serviceaccount:${each.value}:${var.app_service_account}"
-  audience            = ["api://AzureADTokenExchange"]
+  name      = "fic-${each.value}-${var.app_service_account}"
+  parent_id = azurerm_user_assigned_identity.app.id
+  issuer    = azurerm_kubernetes_cluster.main.oidc_issuer_url
+  subject   = "system:serviceaccount:${each.value}:${var.app_service_account}"
+  audience  = ["api://AzureADTokenExchange"]
 }
