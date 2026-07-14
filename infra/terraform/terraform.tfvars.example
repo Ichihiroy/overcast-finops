@@ -17,3 +17,10 @@ location    = "westeurope"
 # gitops_revision          = "main"
 # frontend_host_staging    = "staging.example.com"
 # frontend_host_production = "app.example.com"
+
+# Azure OpenAI (optional — enables the AI assistant). In CI the key comes from
+# the AZURE_OPENAI_API_KEY repo SECRET; endpoint/deployment from repo variables.
+# azure_openai_endpoint    = "https://<resource>.openai.azure.com/"
+# azure_openai_deployment  = "gpt-5.6-luna"
+# azure_openai_api_version = "2024-06-01"
+# azure_openai_api_key     = "<never commit this>"

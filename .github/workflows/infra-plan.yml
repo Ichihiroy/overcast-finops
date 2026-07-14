@@ -23,6 +23,11 @@ env:
   # ingress hosts feed the Argo CD Application specs (gitops.tf)
   TF_VAR_frontend_host_staging: ${{ vars.FRONTEND_HOST_STAGING }}
   TF_VAR_frontend_host_production: ${{ vars.FRONTEND_HOST_PRODUCTION }}
+  # Azure OpenAI (optional AI assistant): endpoint/deployment are identifiers
+  # (repo variables); the key is a repo SECRET. Blank = AI wiring disabled.
+  TF_VAR_azure_openai_endpoint: ${{ vars.AZURE_OPENAI_ENDPOINT }}
+  TF_VAR_azure_openai_deployment: ${{ vars.AZURE_OPENAI_DEPLOYMENT }}
+  TF_VAR_azure_openai_api_key: ${{ secrets.AZURE_OPENAI_API_KEY }}
 
 jobs:
   plan:

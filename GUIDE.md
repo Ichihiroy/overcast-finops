@@ -77,6 +77,13 @@ Two things remain manual/deferred:
 - **TLS**: create a `letsencrypt-prod` ClusterIssuer once a DNS name points at
   the ingress controller's public IP (cert-manager itself is already running).
 
+**AI assistant (optional)**: add repo **secret** `AZURE_OPENAI_API_KEY`
+(Settings → Secrets and variables → Actions → **Secrets**, not Variables) and
+repo **variables** `AZURE_OPENAI_ENDPOINT` + `AZURE_OPENAI_DEPLOYMENT`, then
+run one gated apply. Terraform writes them to Key Vault; the backend picks
+them up through the same CSI-synced Secret as the DB credentials. No key =
+the app answers with deterministic templates instead (never an error).
+
 Set the repo variables `FRONTEND_HOST_STAGING` / `FRONTEND_HOST_PRODUCTION`
 once DNS exists (the ingress renders host-less until then). They flow into the
 Argo CD Application specs as `TF_VAR`s, so run one more infra PR → gated apply

@@ -27,6 +27,11 @@ env:
   # ingress hosts feed the Argo CD Application specs (gitops.tf)
   TF_VAR_frontend_host_staging: ${{ vars.FRONTEND_HOST_STAGING }}
   TF_VAR_frontend_host_production: ${{ vars.FRONTEND_HOST_PRODUCTION }}
+  # Azure OpenAI (optional AI assistant): endpoint/deployment are identifiers
+  # (repo variables); the key is a repo SECRET. Blank = AI wiring disabled.
+  TF_VAR_azure_openai_endpoint: ${{ vars.AZURE_OPENAI_ENDPOINT }}
+  TF_VAR_azure_openai_deployment: ${{ vars.AZURE_OPENAI_DEPLOYMENT }}
+  TF_VAR_azure_openai_api_key: ${{ secrets.AZURE_OPENAI_API_KEY }}
 
 jobs:
   apply:
@@ -83,7 +88,8 @@ jobs:
         run: |
           KV=$(az keyvault list -g "${{ vars.APP_RESOURCE_GROUP }}" --query "[0].name" -o tsv)
           if [ -z "$KV" ]; then echo "No Key Vault in RG — nothing to clean"; exit 0; fi
-          for s in sql-datasource-url sql-datasource-username sql-datasource-password grafana-admin-password; do
+          for s in sql-datasource-url sql-datasource-username sql-datasource-password grafana-admin-password \
+                   azure-openai-endpoint azure-openai-api-key azure-openai-deployment azure-openai-api-version; do
             az keyvault secret delete --vault-name "$KV" --name "$s" -o none 2>/dev/null \
               && echo "deleted stale secret: $s" || echo "skip: $s"
           done

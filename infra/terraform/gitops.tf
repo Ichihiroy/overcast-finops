@@ -69,6 +69,9 @@ locals {
                 { name = "serviceAccount.azureClientId", value = azurerm_user_assigned_identity.app.client_id },
                 { name = "secretProviderClass.keyVaultName", value = azurerm_key_vault.main.name },
                 { name = "secretProviderClass.tenantId", value = data.azurerm_client_config.current.tenant_id },
+                # Only mount the azure-openai-* Key Vault secrets when they
+                # exist (platform.tf creates them iff the key TF_VAR is set).
+                { name = "secretProviderClass.aiEnabled", value = local.ai_enabled ? "true" : "false" },
               ]
             }
           },

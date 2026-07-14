@@ -41,7 +41,7 @@ public class AzureOpenAiClient {
         try {
             String url = props.endpoint().replaceAll("/+$", "")
                     + "/openai/deployments/" + props.deployment()
-                    + "/chat/completions?api-version=" + API_VERSION;
+                    + "/chat/completions?api-version=" + props.apiVersionOrDefault(API_VERSION);
             JsonNode response = rest.post()
                     .uri(url)
                     .header("api-key", props.apiKey())

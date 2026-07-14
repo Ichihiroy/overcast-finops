@@ -33,6 +33,7 @@ overcast:
     endpoint: ${AZURE_OPENAI_ENDPOINT:}
     api-key: ${AZURE_OPENAI_API_KEY:}
     deployment: ${AZURE_OPENAI_DEPLOYMENT:}
+    api-version: ${AZURE_OPENAI_API_VERSION:}
 
 management:
   endpoints:

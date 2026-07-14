@@ -55,6 +55,52 @@ resource "azurerm_key_vault_secret" "grafana_admin" {
   depends_on = [azurerm_role_assignment.deployer_kv_officer]
 }
 
+# ── Azure OpenAI wiring (optional) ────────────────────────────────────
+# Key path: GitHub Actions SECRET → TF_VAR → Key Vault → CSI-synced K8s
+# Secret → backend env vars. With no key the secrets are simply absent and
+# gitops.tf flips secretProviderClass.aiEnabled off, so the CSI mount never
+# references missing Key Vault objects and the app runs in fallback mode.
+locals {
+  # nonsensitive: a bare on/off flag must not taint the Argo app specs.
+  ai_enabled = nonsensitive(var.azure_openai_api_key != "")
+}
+
+resource "azurerm_key_vault_secret" "azure_openai_endpoint" {
+  count        = local.ai_enabled ? 1 : 0
+  name         = "azure-openai-endpoint"
+  value        = var.azure_openai_endpoint
+  key_vault_id = azurerm_key_vault.main.id
+
+  depends_on = [azurerm_role_assignment.deployer_kv_officer]
+}
+
+resource "azurerm_key_vault_secret" "azure_openai_api_key" {
+  count        = local.ai_enabled ? 1 : 0
+  name         = "azure-openai-api-key"
+  value        = var.azure_openai_api_key
+  key_vault_id = azurerm_key_vault.main.id
+
+  depends_on = [azurerm_role_assignment.deployer_kv_officer]
+}
+
+resource "azurerm_key_vault_secret" "azure_openai_deployment" {
+  count        = local.ai_enabled ? 1 : 0
+  name         = "azure-openai-deployment"
+  value        = var.azure_openai_deployment
+  key_vault_id = azurerm_key_vault.main.id
+
+  depends_on = [azurerm_role_assignment.deployer_kv_officer]
+}
+
+resource "azurerm_key_vault_secret" "azure_openai_api_version" {
+  count        = local.ai_enabled ? 1 : 0
+  name         = "azure-openai-api-version"
+  value        = var.azure_openai_api_version
+  key_vault_id = azurerm_key_vault.main.id
+
+  depends_on = [azurerm_role_assignment.deployer_kv_officer]
+}
+
 resource "helm_release" "kube_prometheus_stack" {
   name             = "kps"
   namespace        = "monitoring"

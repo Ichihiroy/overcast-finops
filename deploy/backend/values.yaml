@@ -55,6 +55,19 @@ secretProviderClass:
       envVarName: SPRING_DATASOURCE_USERNAME
     - kvSecretName: sql-datasource-password
       envVarName: SPRING_DATASOURCE_PASSWORD
+  # AI assistant (optional). aiEnabled is set by Terraform through the Argo CD
+  # Application (gitops.tf) — true only when the azure-openai-* secrets exist
+  # in Key Vault, so the CSI mount never references a missing object.
+  aiEnabled: false
+  aiObjects:
+    - kvSecretName: azure-openai-endpoint
+      envVarName: AZURE_OPENAI_ENDPOINT
+    - kvSecretName: azure-openai-api-key
+      envVarName: AZURE_OPENAI_API_KEY
+    - kvSecretName: azure-openai-deployment
+      envVarName: AZURE_OPENAI_DEPLOYMENT
+    - kvSecretName: azure-openai-api-version
+      envVarName: AZURE_OPENAI_API_VERSION
 
 networkPolicy:
   enabled: true

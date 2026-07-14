@@ -140,6 +140,33 @@ variable "frontend_host_production" {
   default     = ""
 }
 
+# ── Azure OpenAI (optional — all blank keeps the AI assistant in
+#    deterministic-fallback mode; see apps/backend AiProperties) ───────
+variable "azure_openai_endpoint" {
+  description = "Azure OpenAI endpoint URL (CI: TF_VAR from the AZURE_OPENAI_ENDPOINT repo variable)."
+  type        = string
+  default     = ""
+}
+
+variable "azure_openai_deployment" {
+  description = "Azure OpenAI chat deployment name (CI: TF_VAR from the AZURE_OPENAI_DEPLOYMENT repo variable)."
+  type        = string
+  default     = ""
+}
+
+variable "azure_openai_api_version" {
+  description = "Azure OpenAI REST api-version the backend calls."
+  type        = string
+  default     = "2024-06-01"
+}
+
+variable "azure_openai_api_key" {
+  description = "Azure OpenAI API key (CI: TF_VAR from the AZURE_OPENAI_API_KEY repo SECRET — never a variable, never committed). Blank disables the AI wiring entirely."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 # ── Azure SQL ─────────────────────────────────────────────────────────
 variable "sql_admin_login" {
   description = "Azure SQL administrator login name (password is generated and stored in Key Vault)."
