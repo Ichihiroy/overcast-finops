@@ -3,4 +3,4 @@
 # other overrides via PR. Cluster identifiers (ACR, client ids, Key Vault) are
 # injected by Terraform (infra/terraform/gitops.tf), never committed here.
 image:
-  tag: "sha-12ede41" # sha-<gitsha>, written by CI on every main build; empty until the first pipeline run
+  tag: "sha-6277d6e" # sha-<gitsha>, written by CI on every main build; empty until the first pipeline run
