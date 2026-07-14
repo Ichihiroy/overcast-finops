@@ -7,17 +7,25 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Provider-detecting entry point. AWS CUR headers are namespaced
- * ("lineItem/UnblendedCost"); Azure export headers are bare words — that
- * prefix is the dispatch signal. Both parsers emit the same ParseResult, so
- * the rules engine never knows which cloud the bill came from.
+ * Provider-dispatching entry point. The caller can name the provider
+ * ("azure" | "aws" | "gcp" — the UI selector); otherwise the header shape
+ * decides: AWS CUR headers are namespaced ("lineItem/UnblendedCost"), GCP
+ * BigQuery exports use dotted names ("service.description"), Azure headers
+ * are bare words. All three parsers emit the same ParseResult, so the rules
+ * engine never knows which cloud the bill came from.
  */
 public final class UsageCsvParser {
 
     private final AzureUsageCsvParser azure = new AzureUsageCsvParser();
     private final AwsCurCsvParser aws = new AwsCurCsvParser();
+    private final GcpBillingCsvParser gcp = new GcpBillingCsvParser();
 
     public ParseResult parse(Reader input) {
+        return parse(input, null);
+    }
+
+    /** @param provider "azure" | "aws" | "gcp", or null/"auto" to detect from headers. */
+    public ParseResult parse(Reader input, String provider) {
         List<List<String>> rows;
         try {
             rows = CsvReader.parse(input);
@@ -27,24 +35,49 @@ public final class UsageCsvParser {
         if (rows.isEmpty()) {
             throw new CsvFormatException("CSV has no data rows.");
         }
-        boolean isCur = rows.get(0).stream()
-                .anyMatch(h -> h.trim().toLowerCase(Locale.ROOT).startsWith("lineitem/"));
-        if (isCur) {
+
+        String forced = provider == null ? "auto" : provider.trim().toLowerCase(Locale.ROOT);
+        switch (forced) {
+            case "azure" -> { return azure.parse(rows); }
+            case "aws" -> { return aws.parse(rows); }
+            case "gcp" -> { return gcp.parse(rows); }
+            case "auto", "" -> { /* fall through to detection */ }
+            default -> throw new CsvFormatException(
+                    "Unknown provider '" + provider + "' — use azure, aws, or gcp.");
+        }
+
+        if (hasHeaderPrefix(rows, "lineitem/")) {
             return aws.parse(rows);
+        }
+        if (hasHeader(rows, "service.description") || hasHeader(rows, "resource.name")
+                || hasHeader(rows, "resource.global_name")) {
+            return gcp.parse(rows);
         }
         try {
             return azure.parse(rows);
         } catch (CsvFormatException e) {
-            // Frequent trap: an AWS export that is NOT the CUR (Cost Explorer
-            // downloads, hand-made spend sheets) has bare headers, lands here,
-            // and gets an Azure-worded error. Point AWS users at the one
-            // format that carries resource ids.
+            // Frequent trap: an AWS/GCP export that is NOT the supported shape
+            // (Cost Explorer downloads, console cost tables, hand-made spend
+            // sheets) has bare headers, lands here, and gets an Azure-worded
+            // error. Point users at the formats that carry resource ids.
             if (e.getMessage().startsWith("Missing required column")) {
                 throw new CsvFormatException(e.getMessage()
                         + " AWS bill? Only the Cost and Usage Report (CUR) with resource IDs is"
-                        + " supported — its headers are namespaced, e.g. lineItem/ResourceId.");
+                        + " supported — its headers are namespaced, e.g. lineItem/ResourceId."
+                        + " GCP bill? Use the BigQuery detailed usage cost export"
+                        + " (service.description, resource.name, cost columns).");
             }
             throw e;
         }
+    }
+
+    private static boolean hasHeaderPrefix(List<List<String>> rows, String prefix) {
+        return rows.get(0).stream()
+                .anyMatch(h -> h.trim().toLowerCase(Locale.ROOT).startsWith(prefix));
+    }
+
+    private static boolean hasHeader(List<List<String>> rows, String name) {
+        return rows.get(0).stream()
+                .anyMatch(h -> h.trim().toLowerCase(Locale.ROOT).equals(name));
     }
 }

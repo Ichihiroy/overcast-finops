@@ -47,7 +47,7 @@ export function Landing({ onStart }: Props) {
             .
           </h1>
           <p className="lp-lead">
-            Overcast scans an Azure usage export or AWS Cost and Usage Report
+            Overcast scans your cloud bill — Azure, AWS, or Google Cloud —
             and surfaces idle, oversized,
             and forgotten resources — with a dollar figure you can actually
             trust, because a deterministic rules engine computes every number,

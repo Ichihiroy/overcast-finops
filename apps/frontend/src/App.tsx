@@ -31,6 +31,7 @@ export default function App() {
     kind: "sample",
     scanId: DEMO_SCAN_ID,
   });
+  const [provider, setProvider] = useState("auto");
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -82,7 +83,7 @@ export default function App() {
       let scanId: string;
       let sum: ScanSummary;
       if (source.kind === "upload") {
-        const created = await api.uploadCsv(source.file);
+        const created = await api.uploadCsv(source.file, provider);
         scanId = created.scanId;
         sum = created.summary;
       } else {
@@ -206,22 +207,37 @@ export default function App() {
               </div>
 
               {source.kind === "upload" && (
-                <div className="control-group">
-                  <label htmlFor="file">Azure usage / AWS CUR CSV</label>
-                  <input
-                    id="file"
-                    className="filebtn"
-                    type="file"
-                    accept=".csv,text/csv"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) setSource({ kind: "upload", file });
-                    }}
-                  />
-                  {source.file.name && (
-                    <div className="filename">{source.file.name}</div>
-                  )}
-                </div>
+                <>
+                  <div className="control-group">
+                    <label htmlFor="provider">Cloud provider</label>
+                    <select
+                      id="provider"
+                      value={provider}
+                      onChange={(e) => setProvider(e.target.value)}
+                    >
+                      <option value="auto">Auto-detect</option>
+                      <option value="azure">Azure (usage details)</option>
+                      <option value="aws">AWS (Cost & Usage Report)</option>
+                      <option value="gcp">Google Cloud (detailed export)</option>
+                    </select>
+                  </div>
+                  <div className="control-group">
+                    <label htmlFor="file">Billing export CSV</label>
+                    <input
+                      id="file"
+                      className="filebtn"
+                      type="file"
+                      accept=".csv,text/csv"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) setSource({ kind: "upload", file });
+                      }}
+                    />
+                    {source.file.name && (
+                      <div className="filename">{source.file.name}</div>
+                    )}
+                  </div>
+                </>
               )}
 
               <button

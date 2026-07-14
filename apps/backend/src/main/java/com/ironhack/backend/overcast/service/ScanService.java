@@ -58,7 +58,12 @@ public class ScanService {
 
     @Transactional
     public ScanSummary ingest(Reader csv, String filename, String fixedScanId) {
-        var parsed = parser.parse(csv);
+        return ingest(csv, filename, fixedScanId, null);
+    }
+
+    @Transactional
+    public ScanSummary ingest(Reader csv, String filename, String fixedScanId, String provider) {
+        var parsed = parser.parse(csv, provider);
         var result = engine.evaluate(parsed.resources());
 
         String scanId = fixedScanId != null ? fixedScanId : UUID.randomUUID().toString();

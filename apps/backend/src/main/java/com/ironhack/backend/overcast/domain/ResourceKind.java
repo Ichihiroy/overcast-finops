@@ -31,6 +31,23 @@ public enum ResourceKind {
         return m.find() ? fromAzureType(m.group(1)) : OTHER;
     }
 
+    /**
+     * GCP classification: the service description scopes it to Compute Engine,
+     * the SKU description says what was billed ("N1 Instance Core running…",
+     * "Storage PD Capacity", "Storage PD Snapshot", "Static Ip Charge").
+     */
+    public static ResourceKind fromGcpSku(String serviceDescription, String skuDescription) {
+        String service = serviceDescription == null ? "" : serviceDescription.toLowerCase(Locale.ROOT);
+        String sku = skuDescription == null ? "" : skuDescription.toLowerCase(Locale.ROOT);
+        if (!service.contains("compute engine")) return OTHER;
+        if (sku.contains("snapshot")) return SNAPSHOT;
+        if (sku.contains("pd capacity") || sku.contains("pd ssd") || sku.contains("persistent disk")) return DISK;
+        if (sku.contains("static ip") || sku.contains("external ip")) return PUBLIC_IP;
+        if (sku.contains("instance core") || sku.contains("instance ram")
+                || sku.contains("core running") || sku.contains("ram running")) return VM;
+        return OTHER;
+    }
+
     /** AWS CUR classification: product code plus the usage-type string. */
     public static ResourceKind fromAwsUsage(String productCode, String usageType) {
         String p = productCode == null ? "" : productCode.toLowerCase(Locale.ROOT);

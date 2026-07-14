@@ -1,0 +1,7 @@
+service.description,sku.description,project.id,location.region,resource.name,usage.amount,cost,currency,labels,AssociatedResource,AgeDays
+Compute Engine,N1 Instance Core running in EMEA,proj-webshop-prod,europe-west1,vm-web-1,730,98.55,USD,"[{""key"":""env"",""value"":""prod""},{""key"":""owner"",""value"":""sam""}]",vm-web-1,
+Compute Engine,Storage PD Capacity,proj-webshop-prod,europe-west1,disk-web-1,730,40.15,USD,"[{""key"":""env"",""value"":""prod""},{""key"":""owner"",""value"":""sam""}]",vm-web-1,
+Compute Engine,Storage PD Capacity,proj-webshop-prod,europe-west1,disk-orphan-3,730,27.40,USD,,,
+Compute Engine,Storage PD Snapshot,proj-webshop-prod,europe-west1,snap-forgotten-1,180,9.00,USD,,,300
+Compute Engine,Static Ip Charge on a Standard VM,proj-webshop-prod,europe-west1,ip-unused-2,730,7.30,USD,,,
+Compute Engine,E2 Instance Core running in EMEA,proj-webshop-dev,europe-west1,vm-nightly-ci,728,55.90,USD,"[{""key"":""env"",""value"":""dev""}]",vm-nightly-ci,

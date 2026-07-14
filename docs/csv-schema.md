@@ -1,8 +1,11 @@
 # CSV schema — Azure Cost Management usage details
 
-Overcast ingests the **Azure Cost Management "usage details" CSV export** (and
-**AWS CUR** — see the AWS section below) and normalizes both into one internal
-model that the rules engine consumes. This doc
+Overcast ingests the **Azure Cost Management "usage details" CSV export**,
+the **AWS CUR**, and the **GCP detailed billing export** (see the provider
+sections below) and normalizes all three into one internal
+model that the rules engine consumes. The UI has a provider selector; on
+"Auto-detect" the header shape decides (AWS headers are `lineItem/`
+namespaced, GCP headers are dotted, Azure headers are bare words). This doc
 is the contract between the export and
 [`AzureUsageCsvParser`](../apps/backend/src/main/java/com/ironhack/backend/overcast/csv/AzureUsageCsvParser.java);
 keep the two in sync.
@@ -114,3 +117,28 @@ headers are bare words. The scan's `source_cloud` records which one matched.
 
 The prev-gen SKU list in `rules-config.yaml` is Azure-flavored, so `prev_gen_vm`
 rarely fires on AWS bills; usage- and cost-based rules work identically.
+
+## GCP detailed billing export
+
+GCP support ingests the **Cloud Billing "detailed usage cost" export** (the
+BigQuery table, flattened to CSV — its column names keep the dotted paths).
+The console's cost-table download has no resource names and cannot be
+scanned. Parser:
+[`GcpBillingCsvParser`](../apps/backend/src/main/java/com/ironhack/backend/overcast/csv/GcpBillingCsvParser.java).
+
+| Normalized field | GCP column | Required | Notes |
+| ---------------- | ---------- | :------: | ----- |
+| `resourceId` | `resource.global_name`, `resource.name` | ✅ | Rows without one (support fees, untied charges) are dropped. |
+| `resourceType` | `service.description` + `sku.description` | | Kind from the SKU description: `Instance Core/Ram`→VM, `Storage PD Capacity`→disk, `…Snapshot`→snapshot, `Static/External Ip`→public IP. |
+| `resourceGroup` | `project.id`, `project.name` | | The project fills the slot, so the non-prod name pattern (`dev\|test\|sandbox\|qa`) works on project ids. |
+| `region` | `location.region`, `location.location` | | |
+| `sku` / `meter` | `sku.description` | | |
+| `quantity` | `usage.amount` | | Summed per resource. |
+| `cost` | `cost` | ✅ | Summed per resource. |
+| `currency` | `currency` | | |
+| `tags` | `labels` | | JSON array of `{key,value}` structs (BigQuery shape) or a plain JSON object — both accepted. |
+| `associatedResource`, `ageDays` | *(enricher-added, optional)* | | Same enrichment contract as Azure/AWS. |
+
+Sample: [`gcp-billing-messy.csv`](../apps/backend/src/main/resources/samples/gcp-billing-messy.csv)
+— an orphaned disk, a 300-day snapshot, an idle static IP, and a dev VM
+running 24/7.

@@ -24,9 +24,10 @@ async function json<T>(res: Response): Promise<T> {
 
 export const api = {
   /** Upload a CSV; returns the new scan id + summary. */
-  async uploadCsv(file: File): Promise<ScanCreated> {
+  async uploadCsv(file: File, provider?: string): Promise<ScanCreated> {
     const form = new FormData();
     form.append("file", file);
+    if (provider && provider !== "auto") form.append("provider", provider);
     return json(await fetch(`${API_URL}/api/scans`, { method: "POST", body: form }));
   },
 

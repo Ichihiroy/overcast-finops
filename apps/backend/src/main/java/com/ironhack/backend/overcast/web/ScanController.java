@@ -38,13 +38,15 @@ public class ScanController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ScanCreated upload(@RequestParam("file") MultipartFile file) throws IOException {
+    public ScanCreated upload(@RequestParam("file") MultipartFile file,
+                              @RequestParam(value = "provider", required = false) String provider)
+            throws IOException {
         if (file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Empty file upload");
         }
         String filename = file.getOriginalFilename() == null ? "upload.csv" : file.getOriginalFilename();
         try (var reader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8)) {
-            ScanSummary summary = scanService.ingest(reader, filename, null);
+            ScanSummary summary = scanService.ingest(reader, filename, null, provider);
             return new ScanCreated(summary.scanId(), summary);
         }
     }
