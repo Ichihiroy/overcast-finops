@@ -3,7 +3,7 @@ package com.ironhack.backend.overcast.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ironhack.backend.overcast.cache.ScanCache;
-import com.ironhack.backend.overcast.csv.AzureUsageCsvParser;
+import com.ironhack.backend.overcast.csv.UsageCsvParser;
 import com.ironhack.backend.overcast.domain.Finding;
 import com.ironhack.backend.overcast.domain.Scan;
 import com.ironhack.backend.overcast.repo.FindingRepository;
@@ -38,7 +38,7 @@ import java.util.UUID;
 @Service
 public class ScanService {
 
-    private final AzureUsageCsvParser parser = new AzureUsageCsvParser();
+    private final UsageCsvParser parser = new UsageCsvParser();
     private final RulesEngine engine;
     private final RulesConfig rulesConfig;
     private final ScanRepository scans;
@@ -68,7 +68,7 @@ public class ScanService {
                 .setScale(2, RoundingMode.HALF_UP);
 
         String dataNotes = dataNotes(parsed.hasAssociationColumn(), parsed.hasAgeColumn());
-        Scan scan = new Scan(scanId, "azure", filename, Instant.now(), parsed.currency(),
+        Scan scan = new Scan(scanId, parsed.provider(), filename, Instant.now(), parsed.currency(),
                 totalCost, result.totalMonthlyWaste(), dataNotes);
         List<Finding> rows = new ArrayList<>();
         for (RuleMatch m : result.matches()) {

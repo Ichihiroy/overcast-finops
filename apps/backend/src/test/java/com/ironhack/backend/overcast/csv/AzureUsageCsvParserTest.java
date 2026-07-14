@@ -85,6 +85,26 @@ class AzureUsageCsvParserTest {
     }
 
     @Test
+    void handlesCostByResourceExportWithDisplayTypesAndArrayTags() {
+        // The portal's "Cost analysis grouped by Resource" download: the type
+        // column is a display name and tags are a JSON array of "k":"v" strings.
+        var rows = List.of(
+                List.of("Resource", "ResourceId", "ResourceType", "ResourceGroupName", "ResourceLocation", "Tags", "Cost", "Currency"),
+                List.of("vm1", "/subscriptions/s/resourcegroups/rg-dev/providers/microsoft.compute/virtualmachines/vm1",
+                        "Virtual machine", "rg-dev", "eu west",
+                        "[\"\\\"environment\\\":\\\"development\\\"\",\"\\\"owner\\\":\\\"ana\\\"\"]",
+                        "9.70", "EUR"));
+        var result = parser.parse(rows);
+
+        assertThat(result.provider()).isEqualTo("azure");
+        NormalizedResource vm = result.resources().get(0);
+        assertThat(vm.kind()).isEqualTo(ResourceKind.VM); // derived from the ARM id
+        assertThat(vm.tags())
+                .containsEntry("environment", "development")
+                .containsEntry("owner", "ana");
+    }
+
+    @Test
     void rejectsCostAnalysisDailyTotalsExportWithTargetedMessage() {
         // The portal's "Cost analysis" download — daily totals, no resources.
         String csv = """

@@ -1,7 +1,8 @@
 # CSV schema — Azure Cost Management usage details
 
-Overcast ingests the **Azure Cost Management "usage details" CSV export** and
-normalizes it into one internal model that the rules engine consumes. This doc
+Overcast ingests the **Azure Cost Management "usage details" CSV export** (and
+**AWS CUR** — see the AWS section below) and normalizes both into one internal
+model that the rules engine consumes. This doc
 is the contract between the export and
 [`AzureUsageCsvParser`](../apps/backend/src/main/java/com/ironhack/backend/overcast/csv/AzureUsageCsvParser.java);
 keep the two in sync.
@@ -83,25 +84,30 @@ and usage hours alone.
 - [`azure-small-clean.csv`](../apps/backend/src/main/resources/samples/azure-small-clean.csv)
   — a tidy bill that produces **zero** findings.
 
-## AWS CUR — documented adapter stub (not implemented)
+## AWS CUR
 
-AWS **Cost and Usage Report** (CUR) support would slot in as a second parser
+AWS **Cost and Usage Report** (CUR, resource-id granularity) uploads are
+supported by
+[`AwsCurCsvParser`](../apps/backend/src/main/java/com/ironhack/backend/overcast/csv/AwsCurCsvParser.java),
 producing the same `NormalizedResource` model — the rules engine and everything
-downstream are cloud-agnostic. The mapping would be roughly:
+downstream are cloud-agnostic.
+[`UsageCsvParser`](../apps/backend/src/main/java/com/ironhack/backend/overcast/csv/UsageCsvParser.java)
+auto-detects the provider: CUR headers are namespaced (`lineItem/...`), Azure
+headers are bare words. The scan's `source_cloud` records which one matched.
 
-| Normalized field | AWS CUR column |
-| ---------------- | -------------- |
-| `resourceId` | `lineItem/ResourceId` |
-| `resourceType` | `product/ProductName` / `lineItem/UsageType` |
-| `resourceGroup` | *(no native equivalent — derive from a cost-allocation tag)* |
-| `region` | `product/region` |
-| `sku` | `product/instanceType` |
-| `quantity` | `lineItem/UsageAmount` |
-| `unitPrice` | `lineItem/UnblendedRate` |
-| `cost` | `lineItem/UnblendedCost` |
-| `currency` | `lineItem/CurrencyCode` |
-| `tags` | `resourceTags/user:*` |
+| Normalized field | AWS CUR column | Required | Notes |
+| ---------------- | -------------- | :------: | ----- |
+| `resourceId` | `lineItem/ResourceId` | ✅ | Line items without one (RI fees, taxes, support) are dropped. |
+| `resourceType` | `lineItem/ProductCode` + `lineItem/UsageType` | | Kind: `BoxUsage`→VM, `EBS:Volume`→disk, `EBS:Snapshot`→snapshot, `ElasticIP`/`IdleAddress`→public IP. |
+| `resourceGroup` | `lineItem/UsageAccountId` | | AWS has no resource groups; the numeric account id never matches the non-prod name pattern, so RG-based rules stay silent. |
+| `region` | `product/region` | | |
+| `sku` | `product/instanceType` | | |
+| `quantity` | `lineItem/UsageAmount` | | Summed per resource, like Azure. |
+| `unitPrice` | `lineItem/UnblendedRate` | | |
+| `cost` | `lineItem/UnblendedCost` | ✅ | Summed per resource. |
+| `currency` | `lineItem/CurrencyCode` | | |
+| `tags` | `resourceTags/user:*` | | One column per tag key; merged across a resource's line items. |
+| `associatedResource`, `ageDays` | *(enricher-added, optional)* | | Same enrichment contract as Azure. |
 
-Only the parser and the SKU/prev-gen lists would change; `source_cloud` on the
-scan already records provenance (`azure` today). **This is a design note only —
-no AWS adapter ships in this repo.**
+The prev-gen SKU list in `rules-config.yaml` is Azure-flavored, so `prev_gen_vm`
+rarely fires on AWS bills; usage- and cost-based rules work identically.

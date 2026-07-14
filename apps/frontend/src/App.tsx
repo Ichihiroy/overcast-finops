@@ -207,7 +207,7 @@ export default function App() {
 
               {source.kind === "upload" && (
                 <div className="control-group">
-                  <label htmlFor="file">Azure usage CSV</label>
+                  <label htmlFor="file">Azure usage / AWS CUR CSV</label>
                   <input
                     id="file"
                     className="filebtn"

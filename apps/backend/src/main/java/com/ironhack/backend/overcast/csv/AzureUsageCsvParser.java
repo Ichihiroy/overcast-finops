@@ -10,7 +10,6 @@ import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -21,7 +20,8 @@ import java.util.TreeMap;
  * Parses an Azure Cost Management "usage details" CSV export into the
  * normalized resource model. Column names, aliases, and the multi-row
  * aggregation strategy are documented in docs/csv-schema.md — keep the two
- * in sync. AWS CUR support is a documented adapter stub, not implemented.
+ * in sync. AWS CUR exports are handled by {@link AwsCurCsvParser}; use
+ * {@link UsageCsvParser} to auto-detect the provider.
  */
 public final class AzureUsageCsvParser {
 
@@ -48,21 +48,20 @@ public final class AzureUsageCsvParser {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public record ParseResult(List<NormalizedResource> resources, String currency,
-                              boolean hasAssociationColumn, boolean hasAgeColumn) {}
-
     public ParseResult parse(Reader input) {
-        List<List<String>> rows;
         try {
-            rows = CsvReader.parse(input);
+            return parse(CsvReader.parse(input));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    public ParseResult parse(List<List<String>> rows) {
         if (rows.size() < 2) {
             throw new CsvFormatException("CSV has no data rows — expected an Azure usage details export.");
         }
 
-        Map<String, Integer> idx = headerIndex(rows.get(0));
+        Map<String, Integer> idx = CsvFields.headerIndex(rows.get(0), COLUMNS);
         // The portal's "Cost analysis" download (UsageDate,Cost,...) is daily
         // totals from the same blade — wrong artifact: no per-resource rows.
         if (!idx.containsKey("resourceId") && hasHeader(rows.get(0), "usagedate")) {
@@ -86,7 +85,7 @@ public final class AzureUsageCsvParser {
         Map<String, List<Map<String, String>>> byResource = new LinkedHashMap<>();
         String currency = "USD";
         for (int i = 1; i < rows.size(); i++) {
-            Map<String, String> row = namedRow(rows.get(i), idx);
+            Map<String, String> row = CsvFields.namedRow(rows.get(i), idx);
             String id = row.get("resourceId");
             if (id == null || id.isBlank()) continue;
             byResource.computeIfAbsent(id.trim(), k -> new ArrayList<>()).add(row);
@@ -101,7 +100,7 @@ public final class AzureUsageCsvParser {
         for (var entry : byResource.entrySet()) {
             resources.add(normalize(entry.getKey(), entry.getValue(), hasAssociationColumn));
         }
-        return new ParseResult(resources, currency, hasAssociationColumn, hasAgeColumn);
+        return new ParseResult(resources, currency, "azure", hasAssociationColumn, hasAgeColumn);
     }
 
     private NormalizedResource normalize(String resourceId, List<Map<String, String>> rows,
@@ -111,9 +110,9 @@ public final class AzureUsageCsvParser {
         BigDecimal primaryCost = new BigDecimal(-1);
         BigDecimal quantity = BigDecimal.ZERO;
         for (Map<String, String> row : rows) {
-            BigDecimal cost = decimal(row.get("cost"));
+            BigDecimal cost = CsvFields.decimal(row.get("cost"));
             totalCost = totalCost.add(cost);
-            quantity = quantity.add(decimal(row.get("quantity")));
+            quantity = quantity.add(CsvFields.decimal(row.get("quantity")));
             if (cost.compareTo(primaryCost) > 0) {
                 primaryCost = cost;
                 primary = row;
@@ -135,17 +134,22 @@ public final class AzureUsageCsvParser {
             }
         }
 
-        String type = orEmpty(primary.get("resourceType"));
+        String type = CsvFields.orEmpty(primary.get("resourceType"));
+        ResourceKind kind = ResourceKind.fromAzureType(type);
+        // "Cost by resource" downloads carry display names ("Virtual machine"),
+        // not ARM types — but the ARM id still embeds the real type segment.
+        if (kind == ResourceKind.OTHER) kind = ResourceKind.fromAzureResourceId(resourceId);
+
         return new NormalizedResource(
                 resourceId,
                 type,
-                ResourceKind.fromAzureType(type),
-                orEmpty(primary.get("resourceGroup")),
-                orEmpty(primary.get("region")),
-                orEmpty(primary.get("meter")),
-                orEmpty(primary.get("sku")),
+                kind,
+                CsvFields.orEmpty(primary.get("resourceGroup")),
+                CsvFields.orEmpty(primary.get("region")),
+                CsvFields.orEmpty(primary.get("meter")),
+                CsvFields.orEmpty(primary.get("sku")),
                 quantity,
-                decimal(primary.get("unitPrice")),
+                CsvFields.decimal(primary.get("unitPrice")),
                 totalCost.setScale(2, java.math.RoundingMode.HALF_UP),
                 parseTags(primary.get("tags")),
                 assoc,
@@ -155,9 +159,16 @@ public final class AzureUsageCsvParser {
     private Map<String, String> parseTags(String raw) {
         if (raw == null || raw.isBlank()) return Map.of();
         String json = raw.trim();
-        if (!json.startsWith("{")) json = "{" + json + "}"; // some exports omit the braces
         try {
-            Map<String, String> tags = mapper.readValue(json, new TypeReference<HashMap<String, String>>() {});
+            if (json.startsWith("[")) {
+                // "Cost by resource" exports write tags as a JSON array of
+                // "\"key\":\"value\"" strings — rebuild the object from it.
+                List<String> pairs = mapper.readValue(json, new TypeReference<ArrayList<String>>() {});
+                json = "{" + String.join(",", pairs) + "}";
+            } else if (!json.startsWith("{")) {
+                json = "{" + json + "}"; // some exports omit the braces
+            }
+            Map<String, String> tags = mapper.readValue(json, new TypeReference<LinkedHashMap<String, String>>() {});
             Map<String, String> lower = new TreeMap<>();
             tags.forEach((k, v) -> lower.put(k.toLowerCase(Locale.ROOT), v == null ? "" : v));
             return lower;
@@ -168,42 +179,5 @@ public final class AzureUsageCsvParser {
 
     private static boolean hasHeader(List<String> header, String name) {
         return header.stream().anyMatch(h -> h.trim().toLowerCase(Locale.ROOT).equals(name));
-    }
-
-    private static Map<String, Integer> headerIndex(List<String> header) {
-        Map<String, Integer> raw = new HashMap<>();
-        for (int i = 0; i < header.size(); i++) {
-            raw.putIfAbsent(header.get(i).trim().toLowerCase(Locale.ROOT), i);
-        }
-        Map<String, Integer> idx = new HashMap<>();
-        COLUMNS.forEach((field, aliases) -> {
-            for (String alias : aliases) {
-                Integer i = raw.get(alias);
-                if (i != null) {
-                    idx.put(field, i);
-                    return;
-                }
-            }
-        });
-        return idx;
-    }
-
-    private static Map<String, String> namedRow(List<String> cells, Map<String, Integer> idx) {
-        Map<String, String> row = new HashMap<>();
-        idx.forEach((field, i) -> row.put(field, i < cells.size() ? cells.get(i) : null));
-        return row;
-    }
-
-    private static BigDecimal decimal(String value) {
-        if (value == null || value.isBlank()) return BigDecimal.ZERO;
-        try {
-            return new BigDecimal(value.trim());
-        } catch (NumberFormatException e) {
-            return BigDecimal.ZERO;
-        }
-    }
-
-    private static String orEmpty(String v) {
-        return v == null ? "" : v.trim();
     }
 }
