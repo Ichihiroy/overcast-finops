@@ -2,4 +2,4 @@
 # image.tag is written by CI's promote-production job behind the reviewer-gated
 # 'production' GitHub environment. Rollback = git revert.
 image:
-  tag: "sha-29fa50f" # sha-<gitsha>, written by CI after reviewer approval; empty until the first pipeline run
+  tag: "sha-84a9049" # sha-<gitsha>, written by CI after reviewer approval; empty until the first pipeline run
