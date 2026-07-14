@@ -1,0 +1,7 @@
+lineItem/ResourceId,lineItem/ProductCode,lineItem/UsageType,lineItem/UsageAccountId,product/region,product/instanceType,lineItem/UsageAmount,lineItem/UnblendedRate,lineItem/UnblendedCost,lineItem/CurrencyCode,resourceTags/user:env,resourceTags/user:owner,AssociatedResource,AgeDays
+i-0web01,AmazonEC2,EUW1-BoxUsage:m5.xlarge,111122223333,eu-west-1,m5.xlarge,730,0.214,156.22,USD,prod,sam,i-0web01,
+vol-0attached7,AmazonEC2,EUW1-EBS:VolumeUsage.gp3,111122223333,eu-west-1,,730,0.080,58.40,USD,prod,sam,i-0web01,
+vol-0orphan42,AmazonEC2,EUW1-EBS:VolumeUsage.gp3,111122223333,eu-west-1,,730,0.080,32.00,USD,,,,
+snap-0forgotten,AmazonEC2,EUW1-EBS:SnapshotUsage,111122223333,eu-west-1,,250,0.050,12.50,USD,,,,240
+eip-0idle,AmazonEC2,EUW1-ElasticIP:IdleAddress,111122223333,eu-west-1,,730,0.005,3.65,USD,,,,
+i-0nightly,AmazonEC2,EUW1-BoxUsage:t3.large,111122223333,eu-west-1,t3.large,728,0.083,60.42,USD,dev,ana,i-0nightly,

@@ -29,6 +29,22 @@ public final class UsageCsvParser {
         }
         boolean isCur = rows.get(0).stream()
                 .anyMatch(h -> h.trim().toLowerCase(Locale.ROOT).startsWith("lineitem/"));
-        return isCur ? aws.parse(rows) : azure.parse(rows);
+        if (isCur) {
+            return aws.parse(rows);
+        }
+        try {
+            return azure.parse(rows);
+        } catch (CsvFormatException e) {
+            // Frequent trap: an AWS export that is NOT the CUR (Cost Explorer
+            // downloads, hand-made spend sheets) has bare headers, lands here,
+            // and gets an Azure-worded error. Point AWS users at the one
+            // format that carries resource ids.
+            if (e.getMessage().startsWith("Missing required column")) {
+                throw new CsvFormatException(e.getMessage()
+                        + " AWS bill? Only the Cost and Usage Report (CUR) with resource IDs is"
+                        + " supported — its headers are namespaced, e.g. lineItem/ResourceId.");
+            }
+            throw e;
+        }
     }
 }

@@ -63,6 +63,20 @@ class AwsCurCsvParserTest {
                 .hasMessageContaining("resourceId");
     }
 
+    @Test
+    void nonCurAwsExportGetsPointedAtTheCur() {
+        // Cost Explorer-style download: bare headers, no lineItem/ namespace —
+        // dispatches to the Azure parser, whose error must carry the AWS hint.
+        String csv = """
+                Service,Amount,Usage Type,Start,End
+                AmazonEC2,42.00,BoxUsage,2026-06-01,2026-06-30
+                """;
+        assertThatThrownBy(() -> parser.parse(new StringReader(csv)))
+                .isInstanceOf(CsvFormatException.class)
+                .hasMessageContaining("Cost and Usage Report")
+                .hasMessageContaining("lineItem/ResourceId");
+    }
+
     private static NormalizedResource byId(List<NormalizedResource> resources, String id) {
         return resources.stream().filter(r -> r.resourceId().equals(id)).findFirst().orElseThrow();
     }

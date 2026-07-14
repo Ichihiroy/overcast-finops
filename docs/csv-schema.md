@@ -83,6 +83,9 @@ and usage hours alone.
   — the seeded `demo` scan; flagged waste totals **$2,300.42/mo**.
 - [`azure-small-clean.csv`](../apps/backend/src/main/resources/samples/azure-small-clean.csv)
   — a tidy bill that produces **zero** findings.
+- [`aws-cur-messy.csv`](../apps/backend/src/main/resources/samples/aws-cur-messy.csv)
+  — a small AWS CUR with an unattached volume, an old snapshot, and an idle
+  Elastic IP; upload it to demo the AWS path.
 
 ## AWS CUR
 
