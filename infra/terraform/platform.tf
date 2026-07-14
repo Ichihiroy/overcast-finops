@@ -11,6 +11,22 @@
 # Terraform only installs the operators/controllers those manifests need.
 # ============================================================================
 
+# Static ingress IP, created in the AKS *node* resource group on purpose:
+# the cluster identity already has network rights there, so no extra RBAC is
+# needed for the load balancer to bind it (the documented AKS pattern). The
+# domain_name_label gives a free, stable FQDN
+# (<label>.<region>.cloudapp.azure.com) — enough for DNS + TLS without buying
+# a domain, and re-claimed identically on every morning rebuild.
+resource "azurerm_public_ip" "ingress" {
+  name                = "pip-${local.name_prefix}-ingress"
+  resource_group_name = azurerm_kubernetes_cluster.main.node_resource_group
+  location            = var.location
+  allocation_method   = "Static"
+  sku                 = "Standard"
+  domain_name_label   = local.name_prefix
+  tags                = var.tags
+}
+
 resource "helm_release" "ingress_nginx" {
   name             = "ingress-nginx"
   namespace        = "ingress-nginx"
@@ -19,6 +35,17 @@ resource "helm_release" "ingress_nginx" {
   chart            = "ingress-nginx"
   version          = "4.15.1"
   timeout          = 600
+
+  values = [yamlencode({
+    controller = {
+      service = {
+        loadBalancerIP = azurerm_public_ip.ingress.ip_address
+        annotations = {
+          "service.beta.kubernetes.io/azure-load-balancer-resource-group" = azurerm_kubernetes_cluster.main.node_resource_group
+        }
+      }
+    }
+  })]
 
   depends_on = [azurerm_kubernetes_cluster_node_pool.user]
 }

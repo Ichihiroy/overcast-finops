@@ -42,3 +42,13 @@ output "oidc_issuer_url" {
   description = "AKS OIDC issuer URL (federated credentials)."
   value       = azurerm_kubernetes_cluster.main.oidc_issuer_url
 }
+
+output "ingress_public_ip" {
+  description = "Static public IP bound to the ingress-nginx load balancer."
+  value       = azurerm_public_ip.ingress.ip_address
+}
+
+output "ingress_fqdn" {
+  description = "Stable ingress hostname (Azure DNS label) — use as FRONTEND_HOST_* and for TLS."
+  value       = azurerm_public_ip.ingress.fqdn
+}
