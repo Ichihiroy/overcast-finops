@@ -64,6 +64,35 @@ class AwsCurCsvParserTest {
     }
 
     @Test
+    void monthlyServiceSummaryParsesWithSynthesizedResourceIds() {
+        // Cost-Explorer-style monthly summary: snake_case headers, no resource
+        // ids — each account/service/usage_type becomes one pseudo-resource.
+        String csv = """
+                invoice_month,linked_account_id,service,usage_type,region,usage_quantity,unit,unit_cost_usd,cost_usd
+                2026-06,000000000001,Amazon EC2,BoxUsage:t3.medium,eu-west-1,730,Hrs,0.0456,33.29
+                2026-06,000000000001,Amazon EC2,EBS:VolumeUsage.gp3,eu-west-1,500,GB-Mo,0.088,44.00
+                2026-06,000000000001,Amazon RDS,InstanceUsage:db.t3.medium,eu-west-1,730,Hrs,0.072,52.56
+                2026-06,000000000001,Amazon S3,TimedStorage-ByteHrs,eu-west-1,1200,GB-Mo,0.024,28.80
+                """;
+        var result = parser.parse(new StringReader(csv));
+
+        assertThat(result.provider()).isEqualTo("aws");
+        assertThat(result.resources()).hasSize(4);
+
+        NormalizedResource ec2 = byId(result.resources(), "000000000001/Amazon EC2/BoxUsage:t3.medium");
+        assertThat(ec2.kind()).isEqualTo(ResourceKind.VM);
+        assertThat(ec2.quantity()).isEqualByComparingTo("730"); // sustained → RI candidate
+        assertThat(ec2.sku()).isEqualTo("t3.medium");           // derived from the usage type
+        assertThat(ec2.monthlyCost()).isEqualByComparingTo("33.29");
+
+        // RDS instance hours are reservable compute; storage/S3 stay OTHER
+        assertThat(byId(result.resources(), "000000000001/Amazon RDS/InstanceUsage:db.t3.medium").kind())
+                .isEqualTo(ResourceKind.VM);
+        assertThat(byId(result.resources(), "000000000001/Amazon S3/TimedStorage-ByteHrs").kind())
+                .isEqualTo(ResourceKind.OTHER);
+    }
+
+    @Test
     void nonCurAwsExportGetsPointedAtTheCur() {
         // Cost Explorer-style download: bare headers, no lineItem/ namespace —
         // dispatches to the Azure parser, whose error must carry the AWS hint.

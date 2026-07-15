@@ -49,6 +49,11 @@ public final class UsageCsvParser {
         if (hasHeaderPrefix(rows, "lineitem/")) {
             return aws.parse(rows);
         }
+        // AWS monthly service summary: bare snake_case headers, no resource ids
+        if (hasHeader(rows, "linked_account_id")
+                || (hasHeader(rows, "usage_type") && hasHeader(rows, "cost_usd"))) {
+            return aws.parse(rows);
+        }
         if (hasHeader(rows, "service.description") || hasHeader(rows, "resource.name")
                 || hasHeader(rows, "resource.global_name")) {
             return gcp.parse(rows);
@@ -62,8 +67,9 @@ public final class UsageCsvParser {
             // error. Point users at the formats that carry resource ids.
             if (e.getMessage().startsWith("Missing required column")) {
                 throw new CsvFormatException(e.getMessage()
-                        + " AWS bill? Only the Cost and Usage Report (CUR) with resource IDs is"
-                        + " supported — its headers are namespaced, e.g. lineItem/ResourceId."
+                        + " AWS bill? Use the Cost and Usage Report (CUR) — headers are namespaced,"
+                        + " e.g. lineItem/ResourceId — or a monthly service summary"
+                        + " (linked_account_id, service, usage_type, cost_usd columns)."
                         + " GCP bill? Use the BigQuery detailed usage cost export"
                         + " (service.description, resource.name, cost columns).");
             }

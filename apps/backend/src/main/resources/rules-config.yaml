@@ -73,14 +73,14 @@ rules:
   - id: nonprod_247
     name: Non-prod running 24/7
     category: idle
-    predicate: "resource is a VM AND (resource_group OR env tag) matches nonprod_rg_pattern AND usage hours ≥ sustained_hours"
+    predicate: "resource is a VM AND (resource_group OR env tag) matches nonprod_rg_pattern AND (usage hours ≥ sustained_hours OR usage unknown — the export had no quantity column)"
     saving: "monthly_cost × offhours_factor"
     remediation: "Add an auto-shutdown schedule to '{resource}' in {rg} (nights + weekends off)."
 
   - id: ondemand_vs_reserved
     name: Sustained on-demand compute
     category: oversized
-    predicate: "resource is a VM AND usage hours ≥ sustained_hours AND NOT nonprod by resource_group or env tag (steady prod load is the reservation candidate; nonprod is handled by nonprod_247)"
+    predicate: "resource is a VM AND (usage hours ≥ sustained_hours OR usage unknown) AND NOT nonprod by resource_group or env tag (steady prod load is the reservation candidate; nonprod is handled by nonprod_247)"
     saving: "monthly_cost × ri_discount"
     remediation: "Buy a 1-year reserved instance for '{resource}' — it ran the entire month on-demand."
 

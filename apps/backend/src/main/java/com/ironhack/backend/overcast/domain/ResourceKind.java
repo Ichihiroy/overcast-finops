@@ -15,6 +15,7 @@ public enum ResourceKind {
         if (resourceType == null) return OTHER;
         String t = resourceType.toLowerCase();
         if (t.endsWith("/virtualmachines")) return VM;
+        if (t.endsWith("/virtualmachinescalesets")) return VM;
         if (t.endsWith("/disks")) return DISK;
         if (t.endsWith("/snapshots")) return SNAPSHOT;
         if (t.endsWith("/publicipaddresses")) return PUBLIC_IP;
@@ -48,10 +49,17 @@ public enum ResourceKind {
         return OTHER;
     }
 
-    /** AWS CUR classification: product code plus the usage-type string. */
+    /**
+     * AWS classification: product code (CUR) or service display name
+     * (monthly summaries — "Amazon EC2" normalizes to "amazonec2") plus the
+     * usage-type string. RDS instance-hours count as VM: they are the same
+     * reservable-compute shape the sustained-usage rules reason about.
+     */
     public static ResourceKind fromAwsUsage(String productCode, String usageType) {
-        String p = productCode == null ? "" : productCode.toLowerCase(Locale.ROOT);
+        String p = productCode == null ? ""
+                : productCode.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
         String u = usageType == null ? "" : usageType.toLowerCase(Locale.ROOT);
+        if (p.contains("rds")) return u.contains("instanceusage") ? VM : OTHER;
         if (!p.equals("amazonec2")) return OTHER;
         if (u.contains("ebs:snapshot")) return SNAPSHOT;
         if (u.contains("ebs:volume")) return DISK;

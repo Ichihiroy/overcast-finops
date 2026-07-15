@@ -12,6 +12,8 @@ import java.util.Map;
  *        needing it stay silent); empty = column present and the resource is
  *        known to be attached to nothing.
  * @param ageDays null = unknown (column absent).
+ * @param quantity null = the export had no usage column (the sustained-hours
+ *        rules then assume always-on — see RulesEngine#sustained).
  */
 public record NormalizedResource(
         String resourceId,

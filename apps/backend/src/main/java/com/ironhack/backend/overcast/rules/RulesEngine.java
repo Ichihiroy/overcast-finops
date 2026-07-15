@@ -191,7 +191,10 @@ public class RulesEngine {
     }
 
     private boolean sustained(NormalizedResource r) {
-        return r.quantity().compareTo(config.sustainedHours()) >= 0;
+        // null = the export had no usage column (cost-by-resource downloads);
+        // a machine billing a full month with unknown hours is treated as
+        // always-on rather than silently passing the check.
+        return r.quantity() == null || r.quantity().compareTo(config.sustainedHours()) >= 0;
     }
 
     private String interpolate(String template, NormalizedResource r) {

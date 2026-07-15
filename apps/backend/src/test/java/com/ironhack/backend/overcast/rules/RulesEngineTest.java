@@ -143,6 +143,21 @@ class RulesEngineTest {
     }
 
     @Test
+    void unknownUsageCountsAsSustainedForCostByResourceExports() {
+        // "Cost by resource" downloads have no usage column (quantity null):
+        // a dev VM billing a full month is assumed always-on → nonprod_247.
+        var devVm = vm("/rg/vm-dev", "rg-redacta-development", "",
+                null, Map.of("owner", "ana", "environment", "development"));
+
+        var result = engine.evaluate(List.of(devVm));
+
+        assertThat(result.matches())
+                .extracting(RuleMatch::ruleId)
+                .containsExactly("nonprod_247");
+        assertThat(result.totalMonthlyWaste()).isEqualByComparingTo("65.00");
+    }
+
+    @Test
     void sustainedThresholdCatchesPartialMonthAlwaysOnCompute() {
         // 520h ≥ sustained_hours (500) → prod VM flagged for reservation;
         // the clean sample's 400h VM stays under the bar on purpose.

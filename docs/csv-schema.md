@@ -22,6 +22,12 @@ API version, so the parser accepts several header aliases per field.
 > by **Resource** before downloading (or use *Usage + charges → Download
 > usage*) to get the per-resource export.
 
+The grouped-by-Resource download is also accepted even though it has no
+`Quantity`/`SKU` columns: usage is then **unknown**, and the sustained-hours
+rules treat a machine that billed the whole month as always-on instead of
+staying silent. Its `Tags` column (a JSON array of `"key":"value"` strings)
+and display-name types ("Virtual machine", via the ARM id) are handled.
+
 ## Columns
 
 Headers are matched **case-insensitively**; the first alias found wins.
@@ -119,6 +125,16 @@ The prev-gen SKU list in `rules-config.yaml` mixes exact Azure names with
 prefix wildcards (`t2.*`, `m4.*`, … and GCP `n1*`), so `prev_gen_vm` fires on
 previous-generation AWS instance families and GCP N1 machines too; usage- and
 cost-based rules work identically.
+
+### AWS monthly service summary
+
+A second AWS shape is accepted: the flat monthly summary
+(`invoice_month, linked_account_id, service, usage_type, region,
+usage_quantity, unit, unit_cost_usd, cost_usd`). It has no resource ids, so
+each `account/service/usage_type` line becomes one pseudo-resource; EC2
+`BoxUsage:*` and RDS `InstanceUsage:*` lines classify as reservable compute
+(the instance type after the `:` feeds the prev-gen check), and the sustained
+on-demand rule fires on their 730-hour months.
 
 ## GCP detailed billing export
 

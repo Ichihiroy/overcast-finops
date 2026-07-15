@@ -99,6 +99,7 @@ class AzureUsageCsvParserTest {
         assertThat(result.provider()).isEqualTo("azure");
         NormalizedResource vm = result.resources().get(0);
         assertThat(vm.kind()).isEqualTo(ResourceKind.VM); // derived from the ARM id
+        assertThat(vm.quantity()).isNull(); // no usage column → usage unknown
         assertThat(vm.tags())
                 .containsEntry("environment", "development")
                 .containsEntry("owner", "ana");
@@ -132,6 +133,7 @@ class AzureUsageCsvParserTest {
     @Test
     void classifiesAzureResourceTypes() {
         assertThat(ResourceKind.fromAzureType("Microsoft.Compute/virtualMachines")).isEqualTo(ResourceKind.VM);
+        assertThat(ResourceKind.fromAzureType("Microsoft.Compute/virtualMachineScaleSets")).isEqualTo(ResourceKind.VM);
         assertThat(ResourceKind.fromAzureType("Microsoft.Compute/disks")).isEqualTo(ResourceKind.DISK);
         assertThat(ResourceKind.fromAzureType("Microsoft.Compute/snapshots")).isEqualTo(ResourceKind.SNAPSHOT);
         assertThat(ResourceKind.fromAzureType("Microsoft.Network/publicIPAddresses")).isEqualTo(ResourceKind.PUBLIC_IP);

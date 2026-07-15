@@ -21,24 +21,30 @@ import java.util.TreeMap;
  */
 public final class AwsCurCsvParser {
 
+    /**
+     * Two supported shapes share these aliases: the CUR (lineItem/ namespaced)
+     * and the monthly service summary (invoice_month, linked_account_id,
+     * service, usage_type, …, cost_usd). The summary has no resource ids —
+     * one is synthesized per account/service/usage_type group.
+     */
     private static final Map<String, List<String>> COLUMNS = Map.ofEntries(
             Map.entry("resourceId", List.of("lineitem/resourceid")),
-            Map.entry("productCode", List.of("lineitem/productcode", "product/servicecode")),
-            Map.entry("usageType", List.of("lineitem/usagetype")),
+            Map.entry("productCode", List.of("lineitem/productcode", "product/servicecode", "service")),
+            Map.entry("usageType", List.of("lineitem/usagetype", "usage_type")),
             // AWS has no resource groups; the account id fills the slot so the
             // non-prod name pattern simply never matches (numeric ids).
-            Map.entry("resourceGroup", List.of("lineitem/usageaccountid")),
-            Map.entry("region", List.of("product/region")),
+            Map.entry("resourceGroup", List.of("lineitem/usageaccountid", "linked_account_id")),
+            Map.entry("region", List.of("product/region", "region")),
             Map.entry("sku", List.of("product/instancetype")),
-            Map.entry("quantity", List.of("lineitem/usageamount")),
-            Map.entry("unitPrice", List.of("lineitem/unblendedrate")),
-            Map.entry("cost", List.of("lineitem/unblendedcost")),
+            Map.entry("quantity", List.of("lineitem/usageamount", "usage_quantity")),
+            Map.entry("unitPrice", List.of("lineitem/unblendedrate", "unit_cost_usd")),
+            Map.entry("cost", List.of("lineitem/unblendedcost", "cost_usd")),
             Map.entry("currency", List.of("lineitem/currencycode")),
             // Enrichment columns the Overcast enricher can append, same as Azure
             Map.entry("associatedResource", List.of("associatedresource")),
             Map.entry("ageDays", List.of("agedays")));
 
-    private static final List<String> REQUIRED = List.of("resourceId", "cost");
+    private static final List<String> REQUIRED = List.of("cost");
     private static final String TAG_PREFIX = "resourcetags/user:";
 
     public ParseResult parse(List<List<String>> rows) {
@@ -54,6 +60,13 @@ public final class AwsCurCsvParser {
                         + "' (accepted headers: " + COLUMNS.get(required) + "). See docs/csv-schema.md.");
             }
         }
+        // No resource ids (monthly service summary) → one pseudo-resource per
+        // account/service/usage_type; needs both columns to build the key.
+        boolean synthesizeIds = !idx.containsKey("resourceId");
+        if (synthesizeIds && !(idx.containsKey("productCode") && idx.containsKey("usageType"))) {
+            throw new CsvFormatException("Missing required CUR column 'resourceId' (accepted headers: "
+                    + COLUMNS.get("resourceId") + "). See docs/csv-schema.md.");
+        }
         Map<String, Integer> tagColumns = new LinkedHashMap<>();
         for (int i = 0; i < header.size(); i++) {
             String h = header.get(i).trim().toLowerCase(Locale.ROOT);
@@ -68,7 +81,7 @@ public final class AwsCurCsvParser {
         for (int i = 1; i < rows.size(); i++) {
             List<String> cells = rows.get(i);
             Map<String, String> row = CsvFields.namedRow(cells, idx);
-            String id = row.get("resourceId");
+            String id = synthesizeIds ? synthesizeId(row) : row.get("resourceId");
             if (id == null || id.isBlank()) continue; // RI fees, taxes, support — not resources
             String key = id.trim();
             byResource.computeIfAbsent(key, k -> new ArrayList<>()).add(row);
@@ -91,6 +104,15 @@ public final class AwsCurCsvParser {
                     Map.copyOf(tagsByResource.get(entry.getKey())), hasAssociationColumn));
         }
         return new ParseResult(resources, currency, "aws", hasAssociationColumn, hasAgeColumn);
+    }
+
+    /** account/service/usage_type — its last segment doubles as the display name. */
+    private static String synthesizeId(Map<String, String> row) {
+        String service = CsvFields.orEmpty(row.get("productCode")).trim();
+        String usage = CsvFields.orEmpty(row.get("usageType")).trim();
+        if (service.isEmpty() && usage.isEmpty()) return null;
+        return CsvFields.orEmpty(row.get("resourceGroup")).trim()
+                + "/" + service + "/" + (usage.isEmpty() ? "usage" : usage);
     }
 
     private NormalizedResource normalize(String resourceId, List<Map<String, String>> rows,
@@ -126,6 +148,13 @@ public final class AwsCurCsvParser {
 
         String product = CsvFields.orEmpty(primary.get("productCode"));
         String usageType = CsvFields.orEmpty(primary.get("usageType"));
+        String sku = CsvFields.orEmpty(primary.get("sku"));
+        if (sku.isEmpty()) {
+            // Summaries carry no instance-type column, but the usage type
+            // embeds it ("BoxUsage:t3.medium") — feeds the prev-gen SKU check.
+            int colon = usageType.lastIndexOf(':');
+            if (colon >= 0 && colon < usageType.length() - 1) sku = usageType.substring(colon + 1);
+        }
         return new NormalizedResource(
                 resourceId,
                 product + (usageType.isEmpty() ? "" : "/" + usageType),
@@ -133,7 +162,7 @@ public final class AwsCurCsvParser {
                 CsvFields.orEmpty(primary.get("resourceGroup")),
                 CsvFields.orEmpty(primary.get("region")),
                 usageType,
-                CsvFields.orEmpty(primary.get("sku")),
+                sku,
                 quantity,
                 CsvFields.decimal(primary.get("unitPrice")),
                 totalCost.setScale(2, RoundingMode.HALF_UP),

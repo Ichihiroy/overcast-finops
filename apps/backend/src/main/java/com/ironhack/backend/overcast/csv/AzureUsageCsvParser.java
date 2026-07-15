@@ -79,6 +79,7 @@ public final class AzureUsageCsvParser {
         }
         boolean hasAssociationColumn = idx.containsKey("associatedResource");
         boolean hasAgeColumn = idx.containsKey("ageDays");
+        boolean hasQuantityColumn = idx.containsKey("quantity");
 
         // Group rows by resource id: costs sum; descriptive fields come from
         // the row with the highest cost ("primary meter") — see docs/csv-schema.md.
@@ -98,13 +99,13 @@ public final class AzureUsageCsvParser {
 
         List<NormalizedResource> resources = new ArrayList<>();
         for (var entry : byResource.entrySet()) {
-            resources.add(normalize(entry.getKey(), entry.getValue(), hasAssociationColumn));
+            resources.add(normalize(entry.getKey(), entry.getValue(), hasAssociationColumn, hasQuantityColumn));
         }
         return new ParseResult(resources, currency, "azure", hasAssociationColumn, hasAgeColumn);
     }
 
     private NormalizedResource normalize(String resourceId, List<Map<String, String>> rows,
-                                         boolean hasAssociationColumn) {
+                                         boolean hasAssociationColumn, boolean hasQuantityColumn) {
         Map<String, String> primary = rows.get(0);
         BigDecimal totalCost = BigDecimal.ZERO;
         BigDecimal primaryCost = new BigDecimal(-1);
@@ -148,7 +149,9 @@ public final class AzureUsageCsvParser {
                 CsvFields.orEmpty(primary.get("region")),
                 CsvFields.orEmpty(primary.get("meter")),
                 CsvFields.orEmpty(primary.get("sku")),
-                quantity,
+                // "Cost by resource" downloads carry no usage column — null =
+                // usage unknown, and the sustained-hours rules assume always-on
+                hasQuantityColumn ? quantity : null,
                 CsvFields.decimal(primary.get("unitPrice")),
                 totalCost.setScale(2, java.math.RoundingMode.HALF_UP),
                 parseTags(primary.get("tags")),
