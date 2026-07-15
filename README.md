@@ -47,6 +47,11 @@ back to git**. Argo CD (running inside the cluster) notices the commit and
 rolls out the change. Nothing and nobody deploys by hand — if it's not in git,
 it doesn't run.
 
+The full picture — every identity, pipeline, namespace, and network boundary
+in one diagram:
+
+![Architecture diagram: GitHub OIDC pipelines, Terraform-provisioned Azure resources, and the AKS cluster with staging/production namespaces](docs/architecture-diagram.png)
+
 ## What's in the repo
 
 | Folder | What it is, in plain words |
