@@ -8,8 +8,8 @@ name: infra-drift
 # OIDC subject for scheduled runs is `ref:refs/heads/main` — bootstrap.sh adds
 # that federated credential to platform-ro alongside its pull_request one.
 on:
-  schedule:
-    - cron: "0 6 * * *"
+  push:
+    branches: main
   workflow_dispatch: {}
 
 concurrency:
