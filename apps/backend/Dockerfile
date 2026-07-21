@@ -11,7 +11,7 @@ RUN mvn -q -B package -DskipTests && \
     java -Djarmode=layertools -jar target/*.jar extract --destination extracted
 
 # ── Runtime stage ─────────────────────────────────────────────────────
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 
 # Numeric uid so Kubernetes runAsNonRoot can verify non-root without a chart
