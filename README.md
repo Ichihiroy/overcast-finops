@@ -5,7 +5,7 @@
 A complete, production-style platform on **Azure Kubernetes Service**, built by
 team *the locals* as the Ironhack DevOps capstone. It runs a real 3-tier web
 application — but the app is intentionally the least interesting part. The
-graded deliverable is everything around it:
+graded deliverable is everything around it
 
 - **Infrastructure as Code** — one Terraform apply builds the entire cloud
   environment (cluster, registry, database, networking, monitoring).
